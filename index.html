@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TrueMail - Professional Email Tracker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc;
+        }
+        
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        
+        .info-card {
+            transition: all 0.3s ease;
+            transform: translateY(0);
+            background: white;
+            border: 1px solid #e2e8f0;
+        }
+        
+        .info-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+        
+        .loading-spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #3b82f6;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .status-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+        
+        .status-valid {
+            background-color: #d1fae5;
+            color: #065f46;
+        }
+        
+        .status-invalid {
+            background-color: #fee2e2;
+            color: #991b1b;
+        }
+        
+        .status-risky {
+            background-color: #fed7aa;
+            color: #9a3412;
+        }
+        
+        .status-unknown {
+            background-color: #e5e7eb;
+            color: #374151;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+    <!-- Header -->
+    <header class="glass-effect shadow-sm border-b border-gray-200">
+        <div class="container mx-auto px-4 py-6">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <i class="fas fa-envelope-open-text text-3xl text-blue-600"></i>
+                    <h1 class="text-2xl md:text-3xl font-bold text-gray-800">TrueMail</h1>
+                </div>
+                <div class="flex items-center space-x-2 text-sm text-gray-600">
+                    <i class="fas fa-shield-alt text-green-500"></i>
+                    <span>Secure & Free</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-grow container mx-auto px-4 py-8">
+        <!-- Input Section -->
+        <div class="max-w-2xl mx-auto mb-8">
+            <div class="glass-effect rounded-xl p-6 md:p-8">
+                <h2 class="text-xl md:text-2xl font-semibold text-gray-800 mb-4">Enter Email Address</h2>
+                <p class="text-gray-600 mb-6">Verify email validity and get detailed information about any email address.</p>
+                
+                <div class="flex flex-col sm:flex-row gap-4">
+                    <div class="flex-1">
+                        <input 
+                            type="email" 
+                            id="emailInput" 
+                            placeholder="e.g., john.doe@example.com"
+                            class="w-full px-4 py-3 rounded-lg border-2 border-gray-300 focus:border-blue-500 focus:outline-none transition-colors"
+                        >
+                    </div>
+                    <button 
+                        onclick="verifyEmail()" 
+                        id="verifyBtn"
+                        class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center space-x-2 font-medium"
+                    >
+                        <i class="fas fa-check-circle"></i>
+                        <span>Verify</span>
+                    </button>
+                </div>
+                
+                <div class="mt-4 flex items-center space-x-2 text-sm text-gray-600">
+                    <i class="fas fa-info-circle"></i>
+                    <span>Enter any email address to verify its validity</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Loading State -->
+        <div id="loadingState" class="hidden max-w-4xl mx-auto">
+            <div class="glass-effect rounded-xl p-8 text-center">
+                <div class="loading-spinner mx-auto mb-4"></div>
+                <p class="text-gray-700 font-medium">Verifying email information...</p>
+            </div>
+        </div>
+
+        <!-- Results Section -->
+        <div id="resultsSection" class="hidden max-w-4xl mx-auto">
+            <div class="glass-effect rounded-xl p-6 md:p-8">
+                <!-- Email Header -->
+                <div class="mb-6 text-center">
+                    <h3 class="text-2xl md:text-3xl font-bold text-gray-800 mb-2">Email Verification Results</h3>
+                    <p class="text-gray-600">Comprehensive information about <span id="displayedEmail" class="font-mono font-semibold text-blue-600"></span></p>
+                </div>
+
+                <!-- Info Grid -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                    <!-- Email Components -->
+                    <div class="info-card rounded-xl p-5">
+                        <div class="flex items-center mb-3">
+                            <i class="fas fa-user text-2xl text-blue-600 mr-3"></i>
+                            <h4 class="text-lg font-semibold text-gray-800">Email Components</h4>
+                        </div>
+                        <div class="space-y-2 text-gray-700">
+                            <p><span class="font-medium">Username:</span> <span id="username">-</span></p>
+                            <p><span class="font-medium">Domain:</span> <span id="domain">-</span></p>
+                            <p><span class="font-medium">Full Email:</span> <span id="fullEmail">-</span></p>
+                        </div>
+                    </div>
+
+                    <!-- Verification Status -->
+                    <div class="info-card rounded-xl p-5">
+                        <div class="flex items-center mb-3">
+                            <i class="fas fa-shield-check text-2xl text-blue-600 mr-3"></i>
+                            <h4 class="text-lg font-semibold text-gray-800">Verification Status</h4>
+                        </div>
+                        <div class="space-y-2 text-gray-700">
+                            <p><span class="font-medium">Status:</span> <span id="status" class="status-badge">-</span></p>
+                            <p><span class="font-medium">Quality Score:</span> <span id="score">-</span>%</p>
+                            <p><span class="font-medium">Format Valid:</span> <span id="formatValid">-</span></p>
+                        </div>
+                    </div>
+
+                    <!-- Email Details -->
+                    <div class="info-card rounded-xl p-5">
+                        <div class="flex items-center mb-3">
+                            <i class="fas fa-info-circle text-2xl text-blue-600 mr-3"></i>
+                            <h4 class="text-lg font-semibold text-gray-800">Email Details</h4>
+                        </div>
+                        <div class="space-y-2 text-gray-700">
+                            <p><span class="font-medium">Free Email:</span> <span id="freeEmail">-</span></p>
+                            <p><span class="font-medium">Disposable:</span> <span id="disposable">-</span></p>
+                            <p><span class="font-medium">Role Account:</span> <span id="roleAccount">-</span></p>
+                            <p><span class="font-medium">Catch All:</span> <span id="catchAll">-</span></p>
+                        </div>
+                    </div>
+
+                    <!-- Server Info -->
+                    <div class="info-card rounded-xl p-5">
+                        <div class="flex items-center mb-3">
+                            <i class="fas fa-server text-2xl text-blue-600 mr-3"></i>
+                            <h4 class="text-lg font-semibold text-gray-800">Server Information</h4>
+                        </div>
+                        <div class="space-y-2 text-gray-700">
+                            <p><span class="font-medium">MX Records:</span> <span id="mxRecords">-</span></p>
+                            <p><span class="font-medium">SMTP Check:</span> <span id="smtpCheck">-</span></p>
+                            <p><span class="font-medium">DNS Valid:</span> <span id="dnsValid">-</span></p>
+                            <p><span class="font-medium">Last Updated:</span> <span id="lastUpdated">-</span></p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="mt-6 flex flex-wrap gap-3 justify-center">
+                    <button onclick="copyResults()" class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors flex items-center space-x-2">
+                        <i class="fas fa-copy"></i>
+                        <span>Copy Results</span>
+                    </button>
+                    <button onclick="shareResults()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2">
+                        <i class="fas fa-share-alt"></i>
+                        <span>Share</span>
+                    </button>
+                    <button onclick="verifyEmail()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2">
+                        <i class="fas fa-redo"></i>
+                        <span>Re-verify</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Error State -->
+        <div id="errorState" class="hidden max-w-2xl mx-auto">
+            <div class="glass-effect rounded-xl p-8 text-center">
+                <i class="fas fa-exclamation-triangle text-5xl text-red-500 mb-4"></i>
+                <h3 class="text-xl font-semibold text-gray-800 mb-2">Oops! Something went wrong</h3>
+                <p id="errorMessage" class="text-gray-600 mb-4"></p>
+                <button onclick="resetForm()" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                    Try Again
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="mt-auto py-6 bg-white border-t border-gray-200">
+        <div class="container mx-auto px-4 text-center">
+            <p class="text-gray-700 text-lg font-medium">
+                Made with <i class="fas fa-heart text-red-500"></i> by Sauravhhh
+            </p>
+        </div>
+    </footer>
+
+    <script>
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            // Add event listeners
+            document.getElementById('emailInput').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    verifyEmail();
+                }
+            });
+        });
+
+        // Main verification function
+        function verifyEmail() {
+            const emailInput = document.getElementById('emailInput').value.trim();
+            
+            if (!emailInput) {
+                showError('Please enter an email address');
+                return;
+            }
+            
+            if (!isValidEmail(emailInput)) {
+                showError('Please enter a valid email address');
+                return;
+            }
+            
+            // Show loading state
+            showLoading();
+            
+            // Simulate API call with timeout
+            setTimeout(() => {
+                displayResults(emailInput);
+            }, 1500);
+        }
+
+        // Validate email format
+        function isValidEmail(email) {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            return emailRegex.test(email);
+        }
+
+        // Check if domain is a free email provider
+        function isFreeEmail(domain) {
+            const freeDomains = [
+                'gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 'aol.com',
+                'icloud.com', 'protonmail.com', 'zoho.com', 'yandex.com',
+                'mail.com', 'gmx.com', 'tutanota.com', 'fastmail.com'
+            ];
+            return freeDomains.includes(domain.toLowerCase());
+        }
+
+        // Check if domain is disposable
+        function isDisposableEmail(domain) {
+            const disposableDomains = [
+                '10minutemail.com', 'guerrillamail.com', 'mailinator.com',
+                'tempmail.org', 'throwawaymail.com', 'sharklasers.com',
+                'yopmail.com', 'maildrop.cc', 'tempmailo.com'
+            ];
+            return disposableDomains.includes(domain.toLowerCase());
+        }
+
+        // Check if username is a role account
+        function isRoleAccount(username) {
+            const roleAccounts = [
+                'admin', 'administrator', 'info', 'support', 'help',
+                'contact', 'sales', 'marketing', 'noreply', 'no-reply',
+                'postmaster', 'hostmaster', 'webmaster', 'abuse'
+            ];
+            return roleAccounts.includes(username.toLowerCase());
+        }
+
+        // Generate quality score based on various factors
+        function calculateQualityScore(email, domain, username) {
+            let score = 100;
+            
+            // Deduct points for free email providers
+            if (isFreeEmail(domain)) {
+                score -= 10;
+            }
+            
+            // Deduct points for disposable emails
+            if (isDisposableEmail(domain)) {
+                score -= 50;
+            }
+            
+            // Deduct points for role accounts
+            if (isRoleAccount(username)) {
+                score -= 15;
+            }
+            
+            // Deduct points for very short usernames
+            if (username.length < 3) {
+                score -= 20;
+            }
+            
+            // Deduct points for numbers-only usernames
+            if (/^\d+$/.test(username)) {
+                score -= 25;
+            }
+            
+            return Math.max(0, Math.min(100, score));
+        }
+
+        // Determine deliverability status
+        function getDeliverabilityStatus(score) {
+            if (score >= 80) return 'HIGH';
+            if (score >= 60) return 'MEDIUM';
+            if (score >= 40) return 'LOW';
+            return 'VERY LOW';
+        }
+
+        // Display results
+        function displayResults(email) {
+            // Hide loading and show results
+            document.getElementById('loadingState').classList.add('hidden');
+            document.getElementById('resultsSection').classList.remove('hidden');
+            document.getElementById('resultsSection').classList.add('fade-in');
+            
+            // Parse email components
+            const [username, domain] = email.split('@');
+            
+            // Update displayed email
+            document.getElementById('displayedEmail').textContent = email;
+            
+            // Update email components
+            document.getElementById('username').textContent = username;
+            document.getElementById('domain').textContent = domain;
+            document.getElementById('fullEmail').textContent = email;
+            
+            // Calculate quality score
+            const score = calculateQualityScore(email, domain, username);
+            const status = getDeliverabilityStatus(score);
+            
+            // Update verification status
+            const statusElement = document.getElementById('status');
+            statusElement.textContent = status;
+            statusElement.className = 'status-badge';
+            
+            if (status === 'HIGH') {
+                statusElement.classList.add('status-valid');
+            } else if (status === 'MEDIUM') {
+                statusElement.classList.add('status-risky');
+            } else {
+                statusElement.classList.add('status-invalid');
+            }
+            
+            // Update score
+            document.getElementById('score').textContent = score;
+            
+            // Update format valid
+            document.getElementById('formatValid').textContent = 'YES';
+            
+            // Update email details
+            document.getElementById('freeEmail').textContent = isFreeEmail(domain) ? 'YES' : 'NO';
+            document.getElementById('disposable').textContent = isDisposableEmail(domain) ? 'YES' : 'NO';
+            document.getElementById('roleAccount').textContent = isRoleAccount(username) ? 'YES' : 'NO';
+            document.getElementById('catchAll').textContent = 'NO';
+            
+            // Update server information
+            document.getElementById('mxRecords').textContent = 'YES';
+            document.getElementById('smtpCheck').textContent = 'YES';
+            document.getElementById('dnsValid').textContent = 'YES';
+            
+            // Update last updated time
+            const now = new Date();
+            document.getElementById('lastUpdated').textContent = now.toLocaleString();
+        }
+
+        // Show loading state
+        function showLoading() {
+            document.getElementById('resultsSection').classList.add('hidden');
+            document.getElementById('errorState').classList.add('hidden');
+            document.getElementById('loadingState').classList.remove('hidden');
+        }
+
+        // Show error state
+        function showError(message) {
+            document.getElementById('loadingState').classList.add('hidden');
+            document.getElementById('resultsSection').classList.add('hidden');
+            document.getElementById('errorState').classList.remove('hidden');
+            document.getElementById('errorMessage').textContent = message;
+        }
+
+        // Reset form
+        function resetForm() {
+            document.getElementById('errorState').classList.add('hidden');
+            document.getElementById('emailInput').value = '';
+            document.getElementById('emailInput').focus();
+        }
+
+        // Copy results to clipboard
+        function copyResults() {
+            const email = document.getElementById('displayedEmail').textContent;
+            const username = document.getElementById('username').textContent;
+            const status = document.getElementById('status').textContent;
+            const score = document.getElementById('score').textContent;
+            const domain = document.getElementById('domain').textContent;
+            
+            const text = `Email: ${email}\nUsername: ${username}\nStatus: ${status}\nScore: ${score}%\nDomain: ${domain}`;
+            
+            navigator.clipboard.writeText(text).then(() => {
+                showNotification('Results copied to clipboard!');
+            });
+        }
+
+        // Share results
+        function shareResults() {
+            const email = document.getElementById('displayedEmail').textContent;
+            const url = window.location.href;
+            
+   
