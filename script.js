@@ -1,7 +1,7 @@
 // API Configuration
 const EMAIL_API_URL = 'https://api.quickemailverification.com/v1/verify';
 const EMAIL_API_KEY = '524528a5257a3698005807815b021916eb1b54588ad8a24eb53cf8048236';
-const WHOIS_API_URL = 'https://api.whoapi.com/';
+const WHOIS_API_URL = 'https://www.whois.com/whois/';
 
 // Comprehensive list of known email providers
 const knownEmailProviders = [
@@ -64,8 +64,9 @@ async function verifyEmail() {
     showLoading();
     
     try {
-        // Use QuickEmailVerification API
-        const emailResponse = await fetch(`${EMAIL_API_URL}?email=${encodeURIComponent(emailInput)}&apikey=${EMAIL_API_KEY}`);
+        // Use QuickEmailVerification API with CORS proxy
+        const proxyUrl = 'https://cors-anywhere.herokuapp.com/';
+        const emailResponse = await fetch(proxyUrl + EMAIL_API_URL + '?email=' + encodeURIComponent(emailInput) + '&apikey=' + EMAIL_API_KEY);
         
         if (!emailResponse.ok) {
             throw new Error(`HTTP error! status: ${emailResponse.status}`);
@@ -91,8 +92,8 @@ async function verifyEmail() {
 // Get WHOIS data for domain
 async function getWhoisData(domain) {
     try {
-        // Use whoapi.com for WHOIS data
-        const response = await fetch(`${WHOIS_API_URL}?domain=${domain}&r=whois&apikey=demokey`);
+        // Use a different WHOIS API that supports CORS
+        const response = await fetch(`https://api.whoapi.com/?domain=${domain}&r=whois&apikey=demokey`);
         
         if (!response.ok) {
             throw new Error(`WHOIS HTTP error! status: ${response.status}`);
@@ -100,9 +101,19 @@ async function getWhoisData(domain) {
         
         const data = await response.json();
         
-        if (data.status === 0 && data.whois) {
-            // Parse WHOIS data
-            return parseWhoisData(data.whois, domain);
+        if (data.status === 0) {
+            return {
+                registrar: data.registrar_name || 'Unknown',
+                registeredOn: data.date_created || 'Unknown',
+                expiresOn: data.date_expires || 'Unknown',
+                updatedOn: data.date_updated || 'Unknown',
+                nameServers: data.nameservers ? data.nameservers.join(', ') : 'Unknown',
+                domainStatus: data.status || 'Unknown',
+                dnssec: data.dnssec || 'Unknown',
+                registrantOrg: data.registrant_org || 'Unknown',
+                registrantCountry: data.registrant_country || 'Unknown',
+                registrantState: data.registrant_state || 'Unknown'
+            };
         } else {
             throw new Error('WHOIS data not available');
         }
@@ -121,97 +132,6 @@ async function getWhoisData(domain) {
             registrantCountry: 'Unknown',
             registrantState: 'Unknown'
         };
-    }
-}
-
-// Parse WHOIS data
-function parseWhoisData(whoisText, domain) {
-    const result = {
-        registrar: 'Unknown',
-        registeredOn: 'Unknown',
-        expiresOn: 'Unknown',
-        updatedOn: 'Unknown',
-        nameServers: 'Unknown',
-        domainStatus: 'Unknown',
-        dnssec: 'Unknown',
-        registrantOrg: 'Unknown',
-        registrantCountry: 'Unknown',
-        registrantState: 'Unknown'
-    };
-    
-    // Extract registrar
-    const registrarMatch = whoisText.match(/Registrar\s*:\s*(.+)/i);
-    if (registrarMatch) {
-        result.registrar = registrarMatch[1].trim();
-    }
-    
-    // Extract registration date
-    const regDateMatch = whoisText.match(/(Creation Date|Registered On|Registration Date)\s*:\s*(.+)/i);
-    if (regDateMatch) {
-        result.registeredOn = formatDate(regDateMatch[2]);
-    }
-    
-    // Extract expiration date
-    const expDateMatch = whoisText.match(/(Registry Expiry Date|Expiration Date|Expires On)\s*:\s*(.+)/i);
-    if (expDateMatch) {
-        result.expiresOn = formatDate(expDateMatch[2]);
-    }
-    
-    // Extract updated date
-    const updDateMatch = whoisText.match(/(Updated Date|Last Updated|Modified On)\s*:\s*(.+)/i);
-    if (updDateMatch) {
-        result.updatedOn = formatDate(updDateMatch[2]);
-    }
-    
-    // Extract name servers
-    const nsMatch = whoisText.match(/Name Server\s*:\s*(.+)/gi);
-    if (nsMatch) {
-        result.nameServers = nsMatch.map(ns => ns.split(':')[1].trim()).join(', ');
-    }
-    
-    // Extract domain status
-    const statusMatch = whoisText.match(/Domain Status\s*:\s*(.+)/gi);
-    if (statusMatch) {
-        result.domainStatus = statusMatch.map(status => status.split(':')[1].trim()).join(', ');
-    }
-    
-    // Extract DNSSEC
-    const dnssecMatch = whoisText.match(/DNSSEC\s*:\s*(.+)/i);
-    if (dnssecMatch) {
-        result.dnssec = dnssecMatch[1].trim();
-    }
-    
-    // Extract registrant organization
-    const orgMatch = whoisText.match(/(Registrant Organization|Registrant Org)\s*:\s*(.+)/i);
-    if (orgMatch) {
-        result.registrantOrg = orgMatch[2].trim();
-    }
-    
-    // Extract registrant country
-    const countryMatch = whoisText.match(/(Registrant Country|Country)\s*:\s*(.+)/i);
-    if (countryMatch) {
-        result.registrantCountry = countryMatch[2].trim();
-    }
-    
-    // Extract registrant state
-    const stateMatch = whoisText.match(/(Registrant State\/Province|State)\s*:\s*(.+)/i);
-    if (stateMatch) {
-        result.registrantState = stateMatch[2].trim();
-    }
-    
-    return result;
-}
-
-// Format date consistently
-function formatDate(dateStr) {
-    try {
-        const date = new Date(dateStr);
-        if (isNaN(date.getTime())) {
-            return dateStr;
-        }
-        return date.toISOString().split('T')[0];
-    } catch (error) {
-        return dateStr;
     }
 }
 
@@ -378,4 +298,4 @@ function showNotification(message) {
     setTimeout(() => {
         notification.remove();
     }, 3000);
-                  }
+}
