@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TrueMail - Professional Email Tracker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body class="min-h-screen flex flex-col">
+    <!-- Header -->
+    <header class="glass-effect shadow-sm border-b border-gray-200">
+        <div class="container mx-auto px-4 py-6">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <i class="fas fa-envelope-open-text text-3xl text-blue-600"></i>
+                    <h1 class="text-2xl md:text-3xl font-bold text-gray-800">TrueMail</h1>
+                </div>
+                <div class="flex items-center space-x-2 text-sm text-gray-600">
+                    <i class="fas fa-shield-alt text-green-500"></i>
+                    <span>Secure & Free</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-grow container mx-auto px-4 py-8">
+        <!-- Input Section -->
+        <div class="max-w-2xl mx-auto mb-8">
+            <div class="glass-effect rounded-xl p-6 md:p-8">
+                <h2 class="text-xl md:text-2xl font-semibold text-gray-800 mb-4">Enter Email Address</h2>
+                <p class="text-gray-600 mb-6">Verify email validity and get detailed information about any email address.</p>
+                
+                <div class="flex flex-col sm:flex-row gap-4">
+                    <div class="flex-1">
+                        <input 
+                            type="email" 
+                            id="emailInput" 
+                            placeholder="e.g., john.doe@example.com"
+                            class="w-full px-4 py-3 rounded-lg border-2 border-gray-300 focus:border-blue-500 focus:outline-none transition-colors"
+                        >
+                    </div>
+                    <button 
+                        onclick="verifyEmail()" 
+                        id="verifyBtn"
+                        class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center space-x-2 font-medium"
+                    >
+                        <i class="fas fa-check-circle"></i>
+                        <span>Verify</span>
+                    </button>
+                </div>
+                
+                <div class="mt-4 flex items-center space-x-2 text-sm text-gray-600">
+                    <i class="fas fa-info-circle"></i>
+                    <span>Enter any email address to verify its validity</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Loading State -->
+        <div id="loadingState" class="hidden max-w-4xl mx-auto">
+            <div class="glass-effect rounded-xl p-8 text-center">
+                <div class="loading-spinner mx-auto mb-4"></div>
+                <p class="text-gray-700 font-medium">Verifying email information...</p>
+            </div>
+        </div>
+
+        <!-- Results Section -->
+        <div id="resultsSection" class="hidden max-w-4xl mx-auto">
+            <div class="glass-effect rounded-xl p-6 md:p-8">
+                <!-- Email Header -->
+                <div class="mb-6 text-center">
+                    <h3 class="text-2xl md:text-3xl font-bold text-gray-800 mb-2">Email Verification Results</h3>
+                    <p class="text-gray-600">Comprehensive information about <span id="displayedEmail" class="font-mono font-semibold text-blue-600"></span></p>
+                </div>
+
+                <!-- Info Grid -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                    <!-- Email Components -->
+                    <div class="info-card rounded-xl p-5">
+                        <div class="flex items-center mb-3">
+                            <i class="fas fa-user text-2xl text-blue-600 mr-3"></i>
+                            <h4 class="text-lg font-semibold text-gray-800">Email Components</h4>
+                        </div>
+                        <div class="space-y-2 text-gray-700">
+                            <p><span class="font-medium">Username:</span> <span id="username">-</span></p>
+                            <p><span class="font-medium">Domain:</span> <span id="domain">-</span></p>
+                            <p><span class="font-medium">Provider Type:</span> <span id="providerType" class="provider-badge">-</span></p>
+                        </div>
+                    </div>
+
+                    <!-- Verification Status -->
+                    <div class="info-card rounded-xl p-5">
+                        <div class="flex items-center mb-3">
+                            <i class="fas fa-shield-check text-2xl text-blue-600 mr-3"></i>
+                            <h4 class="text-lg font-semibold text-gray-800">Verification Status</h4>
+                        </div>
+                        <div class="space-y-2 text-gray-700">
+                            <p><span class="font-medium">Status:</span> <span id="status" class="status-badge">-</span></p>
+                            <p><span class="font-medium">Quality Score:</span> <span id="score">-</span>%</p>
+                            <p><span class="font-medium">Format Valid:</span> <span id="formatValid">-</span></p>
+                        </div>
+                    </div>
+
+                    <!-- Email Details -->
+                    <div class="info-card rounded-xl p-5">
+                        <div class="flex items-center mb-3">
+                            <i class="fas fa-info-circle text-2xl text-blue-600 mr-3"></i>
+                            <h4 class="text-lg font-semibold text-gray-800">Email Details</h4>
+                        </div>
+                        <div class="space-y-2 text-gray-700">
+                            <p><span class="font-medium">Free Email:</span> <span id="freeEmail">-</span></p>
+                            <p><span class="font-medium">Disposable:</span> <span id="disposable">-</span></p>
+                            <p><span class="font-medium">Role Account:</span> <span id="roleAccount">-</span></p>
+                            <p><span class="font-medium">Catch All:</span> <span id="catchAll">-</span></p>
+                        </div>
+                    </div>
+
+                    <!-- Server Info -->
+                    <div class="info-card rounded-xl p-5">
+                        <div class="flex items-center mb-3">
+                            <i class="fas fa-server text-2xl text-blue-600 mr-3"></i>
+                            <h4 class="text-lg font-semibold text-gray-800">Server Information</h4>
+                        </div>
+                        <div class="space-y-2 text-gray-700">
+                            <p><span class="font-medium">MX Records:</span> <span id="mxRecords">-</span></p>
+                            <p><span class="font-medium">SMTP Check:</span> <span id="smtpCheck">-</span></p>
+                            <p><span class="font-medium">DNS Valid:</span> <span id="dnsValid">-</span></p>
+                            <p><span class="font-medium">Last Updated:</span> <span id="lastUpdated">-</span></p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- WHOIS Information -->
+                <div class="mt-6">
+                    <h4 class="text-lg font-semibold text-gray-800 mb-3">Domain WHOIS Information</h4>
+                    <div class="info-card rounded-xl p-5">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <h5 class="font-medium text-gray-700 mb-2">Registration Details</h5>
+                                <div class="space-y-1 text-sm text-gray-600">
+                                    <p><span class="font-medium">Registrar:</span> <span id="registrar">-</span></p>
+                                    <p><span class="font-medium">Registered On:</span> <span id="registeredOn">-</span></p>
+                                    <p><span class="font-medium">Expires On:</span> <span id="expiresOn">-</span></p>
+                                    <p><span class="font-medium">Updated On:</span> <span id="updatedOn">-</span></p>
+                                </div>
+                            </div>
+                            <div>
+                                <h5 class="font-medium text-gray-700 mb-2">Name Servers</h5>
+                                <div class="space-y-1 text-sm text-gray-600">
+                                    <p><span class="font-medium">Name Servers:</span> <span id="nameServers">-</span></p>
+                                    <p><span class="font-medium">Status:</span> <span id="domainStatus">-</span></p>
+                                    <p><span class="font-medium">DNSSEC:</span> <span id="dnssec">-</span></p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-4">
+                            <h5 class="font-medium text-gray-700 mb-2">Registrant Contact</h5>
+                            <div class="space-y-1 text-sm text-gray-600">
+                                <p><span class="font-medium">Organization:</span> <span id="registrantOrg">-</span></p>
+                                <p><span class="font-medium">Country:</span> <span id="registrantCountry">-</span></p>
+                                <p><span class="font-medium">State:</span> <span id="registrantState">-</span></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="mt-6 flex flex-wrap gap-3 justify-center">
+                    <button onclick="copyResults()" class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors flex items-center space-x-2">
+                        <i class="fas fa-copy"></i>
+                        <span>Copy Results</span>
+                    </button>
+                    <button onclick="shareResults()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2">
+                        <i class="fas fa-share-alt"></i>
+                        <span>Share</span>
+                    </button>
+                    <button onclick="verifyEmail()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2">
+                        <i class="fas fa-redo"></i>
+                        <span>Re-verify</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Error State -->
+        <div id="errorState" class="hidden max-w-2xl mx-auto">
+            <div class="glass-effect rounded-xl p-8 text-center">
+                <i class="fas fa-exclamation-triangle text-5xl text-red-500 mb-4"></i>
+                <h3 class="text-xl font-semibold text-gray-800 mb-2">Oops! Something went wrong</h3>
+                <p id="errorMessage" class="text-gray-600 mb-4"></p>
+                <button onclick="resetForm()" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                    Try Again
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="mt-auto py-6 bg-white border-t border-gray-200">
+        <div class="container mx-auto px-4 text-center">
+            <p class="text-gray-700 text-lg font-medium">
+                Made with <i class="fas fa-heart text-red-500"></i> by Sauravhhh
+            </p>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+                      </html>
